@@ -1,5 +1,3 @@
-streamlit as st
-pandas as pd
-datetime import date
-numpy as np
-os 
+streamlit
+pandas
+numpy
