@@ -2,7 +2,7 @@ import streamlit as st
 import pandas as pd
 from datetime import date
 import numpy as np
-import os # Importar o módulo os para verificar a existência do arquivo
+import os
 
 st.set_page_config(layout="wide")
 st.title("PCMA - PLANO DE AÇÃO 2025")
@@ -14,20 +14,16 @@ DATA_FILE = "planos_de_acao.csv"
 if 'df_planos' not in st.session_state:
     if os.path.exists(DATA_FILE):
         try:
-            # Tentar carregar o DataFrame existente, inferindo tipos de data
-            # O 'parse_dates' é importante para que as colunas de data sejam lidas corretamente
             st.session_state.df_planos = pd.read_csv(
                 DATA_FILE,
                 parse_dates=["Data Fato", "Início Previsto", "Término Previsto", "Início Real", "Término Real"],
-                dtype={"Nº Sequência": int} # Garantir que o Nº Sequência seja int
+                dtype={"Nº Sequência": int}
             )
-            # Preencher NaT para campos de data vazios que podem vir como NaN ou NaT no CSV
             for col in ["Início Real", "Término Real"]:
                 st.session_state.df_planos[col] = st.session_state.df_planos[col].replace({np.nan: pd.NaT})
 
         except Exception as e:
             st.error(f"Erro ao carregar dados do arquivo CSV: {e}")
-            # Se der erro ao carregar, inicializa um DataFrame vazio
             st.session_state.df_planos = pd.DataFrame(columns=[
                 "Nº Sequência", "Data Fato", "Responsável", "Descreva sua tarefa", "Ação/Etapa", "Tipo Ação",
                 "Início Previsto", "Término Previsto", "Início Real", "Término Real", "Status", "Observação"
@@ -41,7 +37,6 @@ if 'df_planos' not in st.session_state:
                 "Término Real": 'datetime64[ns]'
             })
     else:
-        # Se o arquivo não existir, cria um DataFrame vazio com os tipos de dados corretos
         initial_data = {
             "Nº Sequência": pd.Series(dtype='int'),
             "Data Fato": pd.Series(dtype='datetime64[ns]'),
@@ -61,6 +56,7 @@ if 'df_planos' not in st.session_state:
 # --- Função para Salvar o DataFrame ---
 def save_data():
     st.session_state.df_planos.to_csv(DATA_FILE, index=False)
+    st.success("Dados salvos com sucesso no arquivo CSV!")
     st.balloons()
 
 st.subheader("Adicionar Novo Plano de Ação")
@@ -103,7 +99,9 @@ if submitted:
         ignore_index=True
     )
     st.success("Novo plano de ação adicionado com sucesso!")
-    save_data() # Salva os dados após adicionar um novo plano
+    save_data()
+
+---
 
 st.subheader("Plano de Ação")
 
@@ -122,8 +120,6 @@ if not st.session_state.df_planos.empty:
             "Tipo Ação": st.column_config.TextColumn("Tipo Ação", disabled=True),
             "Início Previsto": st.column_config.DateColumn("Início Previsto", format="DD/MM/YYYY", disabled=True),
             "Término Previsto": st.column_config.DateColumn("Término Previsto", format="DD/MM/YYYY", disabled=True),
-            "Status": st.column_config.TextColumn("Status", disabled=True),
-            "Observação": st.column_config.TextColumn("Observação", disabled=True),
             "Início Real": st.column_config.DateColumn(
                 "Início Real",
                 format="DD/MM/YYYY",
@@ -134,6 +130,18 @@ if not st.session_state.df_planos.empty:
                 format="DD/MM/YYYY",
                 help="Data real de término da tarefa"
             ),
+            # --- Alterações para Status e Observação ---
+            "Status": st.column_config.SelectboxColumn( # Usando SelectboxColumn para Status
+                "Status",
+                options=["Sem Data", "Atrasada", "Planejada", "Cancelada", "Em Andamento", "Concluída"],
+                required=True, # Torna a seleção obrigatória
+                help="Status atual da tarefa"
+            ),
+            "Observação": st.column_config.TextColumn( # Usando TextColumn para Observação
+                "Observação",
+                help="Qualquer observação relevante sobre a tarefa",
+                width="large" # Opcional: para dar mais espaço à observação
+            ),
         },
         hide_index=True,
         use_container_width=True
@@ -141,7 +149,7 @@ if not st.session_state.df_planos.empty:
 
     if not edited_df.equals(df_exibicao):
         st.session_state.df_planos = edited_df
-        save_data() # Salva os dados após a edição na tabela
+        save_data()
         st.success("Tabela atualizada!")
 else:
     st.info("Nenhum plano de ação adicionado ainda. Use o formulário acima para começar!")
