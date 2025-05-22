@@ -78,8 +78,6 @@ with st.form("add_plano"):
     tarefa = st.text_area("Descreva sua tarefa", placeholder="Detalhes da tarefa")
     acaoetapa = st.selectbox("Ação/Etapa", ["Ação", "Etapa"])
     tipoacao = st.selectbox("Tipo Ação", ["Ação de Melhoria", "Ação Imediata", "Ação Corretiva"])
-    inicioprevisto = st.date_input("Início Previsto", format="DD/MM/YYYY", value=date.today())
-    terminoprevisto = st.date_input("Término Previsto", format="DD/MM/YYYY", value=date.today())
     # As opções para Status e Observação aqui devem ser as mesmas do st.selectbox no formulário
     status = st.selectbox("Status", ["Sem Data", "Atrasada", "Planejada", "Cancelada", "Em Andamento", "Concluída"])
     observacao = st.text_area("Observação", placeholder="Adicione observações aqui (opcional)")
@@ -101,8 +99,8 @@ if submitted:
         "Descreva sua tarefa": tarefa,
         "Ação/Etapa": acaoetapa,
         "Tipo Ação": tipoacao,
-        "Início Previsto": inicioprevisto,
-        "Término Previsto": terminoprevisto,
+        "Início Previsto": pd.NaT,
+        "Término Previsto": pd.NaT,
         "Início Real": pd.NaT,
         "Término Real": pd.NaT,
         "Status": status, # Este é o valor vindo do st.selectbox do formulário
@@ -134,8 +132,8 @@ if not st.session_state.df_planos.empty:
             "Descreva sua tarefa": st.column_config.TextColumn("Descreva sua tarefa", disabled=True),
             "Ação/Etapa": st.column_config.TextColumn("Ação/Etapa", disabled=True),
             "Tipo Ação": st.column_config.TextColumn("Tipo Ação", disabled=True),
-            "Início Previsto": st.column_config.DateColumn("Início Previsto", format="DD/MM/YYYY", disabled=True),
-            "Término Previsto": st.column_config.DateColumn("Término Previsto", format="DD/MM/YYYY", disabled=True),
+            "Início Previsto": st.column_config.DateColumn("Início Previsto", format="DD/MM/YYYY", help="Data prevista de início da tarefa"),
+            "Término Previsto": st.column_config.DateColumn("Término Previsto", format="DD/MM/YYYY", help="Data prevista de término da tarefa"),
             "Início Real": st.column_config.DateColumn(
                 "Início Real",
                 format="DD/MM/YYYY",
