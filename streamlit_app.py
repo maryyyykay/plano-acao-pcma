@@ -230,7 +230,7 @@ if st.session_state.current_view == "Adicionar Tarefa":
         st.success("Novo plano de ação adicionado com sucesso!")
         save_data() # Chama a função que agora salva no Google Sheets
         
-        clear_form() # Limpa o formulário após a submissão
+        # Removido clear_form() daqui para evitar StreamlitAPIException
         st.rerun()
 
 elif st.session_state.current_view == "Plano de Ação":
