@@ -76,7 +76,7 @@ def save_data_to_gsheets(df_to_save):
     try:
         gs_account_info = json.loads(st.secrets["GCP_SERVICE_ACCOUNT_JSON"])
         gc = gspread.service_account_from_dict(gs_account_info)
-        spreadsheet = gc.open_by_id(GOOGLE_SHEET_ID)
+        spreadsheet = gspread.open_by_id(GOOGLE_SHEET_ID)
         worksheet = spreadsheet.worksheet(WORKSHEET_NAME)
 
         # Preenche NaT/NaN com None para gspread lidar corretamente
