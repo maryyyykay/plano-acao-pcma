@@ -11,7 +11,7 @@ st.title("🎍 PCMA - PLANO DE AÇÃO 2025")
 
 # --- Variáveis de Configuração do Google Sheets ---
 # ID da sua planilha Google (você encontra na URL da planilha, entre /d/ e /edit)
-GOOGLE_SHEET_ID = "1Ju6-V7bAXa-dnvWlZRcTyRMq4L48NQf07MCdoJLeRwQ" # EX: "1ABCDEFG_HIJKLMN_OPQRSTUVXYZ"
+GOOGLE_SHEET_ID = "1Ju6-V7bAXa-dnvWlZRcTyRMq4L48NQf07MCdoJLeRwQ" # Substitua pelo ID da sua planilha
 WORKSHEET_NAME = "Planos" # O nome da aba (sheet) onde os dados estão, ex: "Planos"
 
 # Definir a estrutura e os dtypes esperados para o DataFrame
@@ -37,9 +37,8 @@ expected_dtypes = {
 def load_data_from_gsheets():
     try:
         # Autentica com a Service Account (usando o segredo do Streamlit Cloud)
-       gc = gspread.service_account_from_dict(gs_account_info)
-spreadsheet = gc.open_by_id(GOOGLE_SHEET_ID) # <-- Esta linha está correta!
-        
+        gs_account_info = json.loads(st.secrets["GCP_SERVICE_ACCOUNT_JSON"])
+        gc = gspread.service_account_from_dict(gs_account_info)
         # Abre a planilha pelo ID e seleciona a aba
         spreadsheet = gc.open_by_id(GOOGLE_SHEET_ID)
         worksheet = spreadsheet.worksheet(WORKSHEET_NAME)
@@ -76,7 +75,7 @@ def save_data_to_gsheets(df_to_save):
     try:
         gs_account_info = json.loads(st.secrets["GCP_SERVICE_ACCOUNT_JSON"])
         gc = gspread.service_account_from_dict(gs_account_info)
-        spreadsheet = gspread.open_by_id(GOOGLE_SHEET_ID)
+        spreadsheet = gc.open_by_id(GOOGLE_SHEET_ID)
         worksheet = spreadsheet.worksheet(WORKSHEET_NAME)
 
         # Preenche NaT/NaN com None para gspread lidar corretamente
@@ -242,12 +241,6 @@ elif st.session_state.current_view == "Plano de Ação":
         st.caption("Detalhes do Plano de Ação")
         df_exibicao = st.session_state.df_planos.sort_values(by="Nº Sequência", ascending=True)
 
-        # Correção para o bug do Streamlit com o st.data_editor e pd.NA/Int64
-        # Converte Int64 para float para o editor lidar melhor, e de volta depois.
-        # Ou, a melhor abordagem é garantir que o df_exibicao esteja com os dtypes corretos
-        # e o st.data_editor lide bem com Int64 (que ele já faz).
-        # O problema maior são os valores de data vazios
-        
         # Pré-processa as colunas de data para o data_editor
         df_for_editor = df_exibicao.copy()
         for col in ["Início Previsto", "Término Previsto", "Início Real", "Término Real"]:
@@ -416,5 +409,3 @@ elif st.session_state.current_view == "Filtrado por Responsável":
         st.info("Selecione um responsável na barra lateral para filtrar.")
 else:
     st.info("Selecione uma opção na barra lateral para começar.")
-
-
