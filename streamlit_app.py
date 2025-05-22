@@ -416,6 +416,5 @@ elif st.session_state.current_view == "Filtrado por Responsável":
         st.info("Selecione um responsável na barra lateral para filtrar.")
 else:
     st.info("Selecione uma opção na barra lateral para começar.")
-else:
-    st.info("Selecione uma opção na barra lateral para começar.")
+
 
