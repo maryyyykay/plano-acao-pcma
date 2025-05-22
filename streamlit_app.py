@@ -37,8 +37,8 @@ expected_dtypes = {
 def load_data_from_gsheets():
     try:
         # Autentica com a Service Account (usando o segredo do Streamlit Cloud)
-        gs_account_info = json.loads(st.secrets["GCP_SERVICE_ACCOUNT_JSON"])
-        gc = gspread.service_account_from_dict(gs_account_info)
+       gc = gspread.service_account_from_dict(gs_account_info)
+spreadsheet = gc.open_by_id(GOOGLE_SHEET_ID) # <-- Esta linha está correta!
         
         # Abre a planilha pelo ID e seleciona a aba
         spreadsheet = gc.open_by_id(GOOGLE_SHEET_ID)
