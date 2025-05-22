@@ -1,5 +1,5 @@
 streamlit
 pandas
 numpy
-gspread
+gspread>=6.0.0
 gspread-dataframe
