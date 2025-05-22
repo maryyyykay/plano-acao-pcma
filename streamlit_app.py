@@ -11,6 +11,7 @@ st.title("🎍 PCMA - PLANO DE AÇÃO 2025")
 DATA_FILE = "planos_de_acao.csv"
 
 # Definir a estrutura e os dtypes esperados para o DataFrame
+
 expected_dtypes = {
     "Nº Sequência": 'Int64',
     "Data Fato": 'datetime64[ns]',
