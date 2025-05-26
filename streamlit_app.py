@@ -12,9 +12,8 @@ st.set_page_config(layout="wide")
 st.title("🎍 PCMA - PLANO DE AÇÃO 2025")
 
 # --- Variáveis de Configuração do Google Sheets ---
-# ID da sua planilha Google (você encontra na URL da planilha, entre /d/ e /edit)
-GOOGLE_SHEET_ID = "1Ju6-V7bAXa-dnvWlZRcTyRMq4L48NQf07MCdoJLeRwQ" # Substitua pelo ID da sua planilha
-WORKSHEET_NAME = "Planos" # O nome da aba (sheet) onde os dados estão, ex: "Planos"
+GOOGLE_SHEET_ID = "1Ju6-V7bAXa-dnvWlZRcTyRMq4L48NQf07MCdoJLeRwQ"
+WORKSHEET_NAME = "Planos"
 
 # Definir a estrutura e os dtypes esperados para o DataFrame
 expected_dtypes = {
@@ -39,16 +38,9 @@ expected_dtypes = {
 @st.cache_resource(ttl=3600) # Cache para o objeto de autenticação (boa prática para o cliente gspread)
 def get_gspread_client():
     try:
-        # Acessa os segredos do Streamlit
         creds_attrdict = st.secrets["gsheets_service_account"]
-        
-        # CONVERTE O AttrDict PARA UM DICIONÁRIO PYTHON PURO
         creds_dict = {key: value for key, value in creds_attrdict.items()}
-        
-        # Converte o dicionário de credenciais para uma string JSON
-        json_creds = json.dumps(creds_dict) # Agora serializa um dict comum
-        
-        # Carrega as credenciais a partir da string JSON e autentica o gspread
+        json_creds = json.dumps(creds_dict)
         gc = gspread.service_account_from_dict(json.loads(json_creds))
         return gc
     except Exception as e:
@@ -56,48 +48,41 @@ def get_gspread_client():
         st.info("Verifique se suas credenciais de conta de serviço estão configuradas corretamente nos segredos do Streamlit Cloud.")
         return None
 
-# Tenta obter o cliente gspread na inicialização do script
-gc = get_gspread_client()
-
+# A função de carregamento de dados agora *chama* get_gspread_client internamente,
+# em vez de recebê-lo como um argumento.
 @st.cache_data(ttl=600) # Recarrega a cada 10 minutos
-def load_data_from_gsheets(client):
+def load_data_from_gsheets():
+    # Obtém o cliente gspread dentro da função em cache
+    client = get_gspread_client() 
     if not client:
-        # Retorna um DataFrame vazio se o cliente não puder ser obtido
         return pd.DataFrame({col: pd.Series(dtype=dtype) for col, dtype in expected_dtypes.items()})
     try:
         sh = client.open_by_id(GOOGLE_SHEET_ID)
         worksheet = sh.worksheet(WORKSHEET_NAME)
         
-        # Lê os dados da planilha como DataFrame
-        # header=1 indica que a primeira linha é o cabeçalho
-        # usecols lista as colunas que você espera ler
         df = get_as_dataframe(worksheet, header=1, usecols=list(expected_dtypes.keys()))
         
-        # Converte tipos de dados
         for col, dtype in expected_dtypes.items():
             if col in df.columns:
                 if 'datetime' in str(dtype):
-                    # Força o formato de data para evitar problemas com valores nulos ou vazios
                     df[col] = pd.to_datetime(df[col], errors='coerce', dayfirst=True)
                 elif 'Int64' in str(dtype):
-                    # Converte para Int64, coerce para NaN em caso de erro, depois preenche com pd.NA e converte
                     df[col] = pd.to_numeric(df[col], errors='coerce').astype('Int64')
                 else:
                     df[col] = df[col].astype(dtype)
             else:
-                # Adiciona colunas que podem estar faltando no Sheets, mas esperadas no DataFrame
                 df[col] = pd.Series(dtype=dtype)
         
-        # Remove linhas completamente vazias que gspread pode retornar
         df.dropna(how='all', inplace=True)
         return df
     except Exception as e:
         st.error(f"Erro ao carregar dados do Google Sheets: {e}")
-        # Retorna um DataFrame vazio com as colunas esperadas em caso de erro
         initial_data_empty = {col: pd.Series(dtype=dtype) for col, dtype in expected_dtypes.items()}
         return pd.DataFrame(initial_data_empty)
 
-def save_data_to_gsheets(client, df_to_save):
+def save_data_to_gsheets(df_to_save):
+    # Obtém o cliente gspread dentro da função de salvar
+    client = get_gspread_client()
     if not client:
         st.error("Não foi possível salvar os dados: cliente Google Sheets não autenticado.")
         return
@@ -108,21 +93,14 @@ def save_data_to_gsheets(client, df_to_save):
 
         df_for_gsheets = df_to_save.copy()
         
-        # Preenche NaT/NaN com None para gspread lidar corretamente
-        # Convertendo todos os datetimes para string no formato DD/MM/YYYY antes de salvar
         for col in df_for_gsheets.select_dtypes(include=['datetime64[ns]']).columns:
             df_for_gsheets[col] = df_for_gsheets[col].dt.strftime('%d/%m/%Y').replace({pd.NA: ''})
         
-        # Converte Int64 (com pd.NA) para int normal ou None
         for col in df_for_gsheets.select_dtypes(include=['Int64']).columns:
             df_for_gsheets[col] = df_for_gsheets[col].apply(lambda x: int(x) if pd.notna(x) else '')
             
-        # Preenche outros NaNs/NAs como strings vazias ou None
-        df_for_gsheets = df_for_gsheets.fillna('') # Garante que todos os NaNs/NAs sejam vazios
+        df_for_gsheets = df_for_gsheets.fillna('')
 
-        # Escreve o DataFrame de volta na planilha
-        # include_index=False para não escrever o índice do DataFrame
-        # include_column_header=True para manter o cabeçalho
         set_with_dataframe(worksheet, df_for_gsheets, include_index=False, include_column_header=True)
         
         st.success("Dados salvos com sucesso no Google Sheets!")
@@ -131,14 +109,15 @@ def save_data_to_gsheets(client, df_to_save):
         st.error(f"Erro ao salvar dados no Google Sheets: {e}")
 
 # --- Lógica de Carregamento de Dados ---
+# Agora, a função load_data_from_gsheets não recebe argumentos e busca o cliente internamente
 if 'df_planos' not in st.session_state:
-    st.session_state.df_planos = load_data_from_gsheets(gc) # Passa o cliente gspread
+    st.session_state.df_planos = load_data_from_gsheets()
 
 # --- Função para Salvar o DataFrame ---
 def save_data():
-    # Remover cache para forçar a releitura após salvar
-    load_data_from_gsheets.clear()
-    save_data_to_gsheets(gc, st.session_state.df_planos) # Passa o cliente gspread
+    load_data_from_gsheets.clear() # Limpa o cache para forçar a releitura
+    # save_data_to_gsheets agora também não recebe o cliente como argumento
+    save_data_to_gsheets(st.session_state.df_planos)
 
 # --- Função para limpar os inputs do formulário ---
 def clear_form():
