@@ -1,6 +1,4 @@
 streamlit
 pandas
-gspread # Mantenha este se ainda tiver algum código gspread não adaptado, caso contrário pode remover
-gspread-dataframe # Mantenha este se ainda tiver algum código gspread-dataframe não adaptado, caso contrário pode remover
 streamlit-gsheets
 numpy
