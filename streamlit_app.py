@@ -3,7 +3,7 @@ import pandas as pd
 from datetime import date
 import json # Pode ser removido se não for mais usado para service_account
 import numpy as np
-from streamlit_gsheets import GSheetsConnection # Importar a nova biblioteca
+from st_gsheets_connection import GSheetsConnection
 
 st.set_page_config(layout="wide")
 st.title("🎍 PCMA - PLANO DE AÇÃO 2025")
